@@ -168,13 +168,13 @@ class LinkerEntry:
 
         if self.noload and self.bss_contains_common:
             linker_writer._write_object_path_section(
-                self.object_path, f"{self.section_link} COMMON .scommon"
+                self.object_path, f"{self.section_link} COMMON .scommon", self.segment
             )
         else:
             wildcard = "*" if options.opts.ld_wildcard_sections else ""
 
             linker_writer._write_object_path_section(
-                self.object_path, f"{self.section_link}{wildcard}"
+                self.object_path, f"{self.section_link}{wildcard}", self.segment
             )
 
     def emit_entry(self, linker_writer: "LinkerWriter"):
@@ -542,7 +542,9 @@ class LinkerWriter:
 
         self.header_symbols.add(symbol)
 
-    def _write_object_path_section(self, object_path: Path, section: str):
+    def _write_object_path_section(self, object_path: Path, section: str, segment: Segment):
+        if segment.rom_start and segment.parent and segment.parent.rom_start:
+            self._writeln(f". = {hex(segment.rom_start)} - {hex(segment.parent.rom_start)};")
         self._writeln(f"{object_path}({section});")
 
     def _begin_segment(
