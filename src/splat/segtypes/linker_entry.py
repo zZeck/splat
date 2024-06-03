@@ -6,9 +6,8 @@ from typing import Dict, List, OrderedDict, Set, Tuple, Union, Optional
 
 from ..util import options, log
 
-from .segment import Segment
+from .segment import Segment, parse_segment_vram
 from ..util.symbols import to_cname
-
 
 # clean 'foo/../bar' to 'bar'
 @lru_cache(maxsize=None)
@@ -543,7 +542,10 @@ class LinkerWriter:
         self.header_symbols.add(symbol)
 
     def _write_object_path_section(self, object_path: Path, section: str, segment: Segment):
-        if segment.rom_start and segment.parent and segment.parent.rom_start:
+        vram = parse_segment_vram(segment.yaml)
+        if vram is not None:
+            self._writeln(f". = {hex(vram)} - {hex(segment.parent.vram_start)};")
+        elif segment.rom_start and segment.parent and segment.parent.rom_start:
             self._writeln(f". = {hex(segment.rom_start)} - {hex(segment.parent.rom_start)};")
         self._writeln(f"{object_path}({section});")
 
